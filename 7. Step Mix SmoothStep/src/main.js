@@ -52,6 +52,7 @@ class ShaderRenderer {
   initRenderer() {
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
+      alpha: true,
       antialias: true,
     });
     this.renderer.setSize(this.sizes.width, this.sizes.height);
