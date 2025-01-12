@@ -42,20 +42,28 @@ void main() {
     // line = step(0.0025, line);
 
     // By combining all above knowledge lets draw line in one liner
-    float line = step(0.0025, abs(vUv.y - 0.5));
-    float linearLine = step(0.0025, abs(vUv.y - mix(0.5, 1.0, vUv.x)));
-    float smoothInterpolationLine = step(0.0025, abs(vUv.y - mix(0.0, 0.5, smoothstep(0.0, 1.0, vUv.x))));
+    float separator1 = step(0.0025, abs(vUv.y - 0.33));
+    float separator2 = step(0.0025, abs(vUv.y - 0.66));
 
-    color = vec3(line);
+    float mixVal = vUv.x;
+    float smoothStepVal = smoothstep(0.0, 1.0, vUv.x);
+    float stepVal = step(0.5, vUv.x);
+
+    float mixLine = step(0.0025, abs(vUv.y - mix(0.66, 1.0, mixVal)));
+    float smoothStepLine = step(0.0025, abs(vUv.y - mix(0.33, 0.66, smoothStepVal)));
+    float stepLine = step(0.0025, abs(vUv.y - mix(0.0, 0.33, stepVal)));
 
     // Now Lets draw red and blue gradient only on top half using mix
     vec3 red = vec3(1.0, 0.0, 0.0);
     vec3 blue = vec3(0.0, 0.0, 1.0);
-    if(vUv.y > 0.5) {
+    if(vUv.y > 0.66) {
         color = mix(red, blue, vUv.x);
-    } else {
+    } else if(vUv.y > 0.33) {
         // Use smoothstep here
         color = mix(red, blue, smoothstep(0.0, 1.0, vUv.x));
+    } else {
+        // Step here
+        color = mix(red, blue, step(0.5, vUv.x));
     }
 
     // Lets get our line back
@@ -65,9 +73,11 @@ void main() {
     // Where things are black, the first parameter gets returned
     // Where things are white the second parameter gets returned
     // And things are gray we mix
-    color = mix(white, color, line);
-    color = mix(white, color, linearLine);
-    color = mix(white, color, smoothInterpolationLine);
+    color = mix(white, color, separator1);
+    color = mix(white, color, separator2);
+    color = mix(white, color, mixLine);
+    color = mix(white, color, smoothStepLine);
+    color = mix(white, color, stepLine);
 
     gl_FragColor = vec4(color, 1.0);
 }
