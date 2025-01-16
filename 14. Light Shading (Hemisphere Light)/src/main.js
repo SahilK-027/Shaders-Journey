@@ -26,12 +26,26 @@ class ShaderRenderer {
 
     this.Clock = new THREE.Clock();
 
+    this.initEnvironment();
     this.initGeometry();
     this.initCamera();
     this.initRenderer();
     this.initControls();
     this.initEventListeners();
     this.startAnimationLoop();
+  }
+
+  initEnvironment() {
+    const cubeTextureLoader = new THREE.CubeTextureLoader();
+    this.environment = cubeTextureLoader.load([
+      "/map/px.png",
+      "/map/nx.png",
+      "/map/py.png",
+      "/map/ny.png",
+      "/map/pz.png",
+      "/map/nz.png",
+    ]);
+    this.scene.background = this.environment;
   }
 
   initGeometry() {
