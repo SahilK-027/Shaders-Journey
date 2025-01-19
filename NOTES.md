@@ -197,6 +197,13 @@ Multiply rows by columns:
 While the math may look complex, modern graphics libraries handle most of the details. Focus on understanding the concepts, and the implementation will become natural with practice.
 
 ## ፨ Coordinate Systems
+Before starting to read the next section go ahead and watch this: 
+
+https://github.com/user-attachments/assets/e7764194-e2cd-4412-a4e5-4b44a1b1e245
+
+credits: 
+- https://www.youtube.com/@MiolithYT
+- https://youtu.be/o-xwmTODTUI?feature=shared
 
 ### The global picture
 
