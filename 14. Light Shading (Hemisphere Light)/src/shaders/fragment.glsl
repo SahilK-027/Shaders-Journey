@@ -12,6 +12,10 @@ float remap(float v, float inMin, float inMax, float outMin, float outMax) {
     return mix(outMin, outMax, t);
 }
 
+vec3 gammaCorrection(vec3 color){
+    return pow(color, vec3(1.0/2.2));
+}
+
 void main() {
     vec3 normal = normalize(vNormal);
     // Base color
@@ -31,7 +35,7 @@ void main() {
     lighting += hemiSphereLight;
 
     vec3 color = baseColor * lighting;
-    color = pow(color, vec3(1.0/2.2));
+    color = gammaCorrection(color);
     gl_FragColor = vec4(color, 1.0);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
