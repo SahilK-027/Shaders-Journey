@@ -26,6 +26,17 @@ vec3 directionalLight(vec3 color, float intensity, vec3 normal, vec3 lightPositi
 
     // Three-tone shading (using step functions to create discrete intensity levels)
     float tone1 = step(0.5, shading);
+
+    // What is this doing exactly?
+    // 1. step(0.25, shading):
+    // -The step function compares shading to the threshold value 0.25.
+    // - If shading is greater than or equal to 0.25, step returns 1.0, otherwise, it returns 0.0.
+    // - This essentially creates a "binary" output: if shading is at least 0.25, tone2 will be set to 1.0; otherwise, it will be set to 0.0.
+    
+    // 2. (1.0 - tone1):
+    // The variable tone1 has already been computed earlier and is either 0.0 or 1.0 (as a result of the first step(0.5, shading) check).
+    // This part ensures that tone2 is only set when tone1 is 0.0, i.e., when the shading value falls between 0.0 and 0.5.
+    // So, when tone1 is 1.0 (meaning shading is above 0.5), tone2 will remain 0.0. This ensures no overlap between the two tones.
     float tone2 = step(0.25, shading) * (1.0 - tone1);
     shading = tone1 * 2.0 + tone2 * 1.0;
 
