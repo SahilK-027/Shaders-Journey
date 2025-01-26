@@ -197,23 +197,100 @@ Multiply rows by columns:
 While the math may look complex, modern graphics libraries handle most of the details. Focus on understanding the concepts, and the implementation will become natural with practice.
 
 ## ፨ Coordinate Systems
-Before starting to read the next section go ahead and watch this: 
+
+Before starting to read the next section go ahead and watch this:
 
 https://github.com/user-attachments/assets/e7764194-e2cd-4412-a4e5-4b44a1b1e245
 
-credits: 
+credits:
+
 - https://www.youtube.com/@MiolithYT
 - https://youtu.be/o-xwmTODTUI?feature=shared
 
-### The global picture
+### The global
 
-### Local space
+![img](/assets/global-positioning.png)
+
+### Local space (Object Space)
+
+- This is the space where the object exists relative to itself. irrespective of anything else on screen. As if this object only sees itself.
+- Think of it as the object's "personal" coordinate system.
+- For example, the center of a cube is by default at (0, 0, 0) in local space, no matter where the cube is in the world.
+- Model Matrix is used to move from local space to world space.
+
+Model transformation: Transform the vertex position from local object space to `world space` using the modelMatrix.
 
 ### World space
 
-### View space
+- This is the space where everything in the 3D scene is positioned.
+- Here, the object has been placed in the "world" along with other objects, based on the scene setup.
+- For instance, that cube at (0, 0, 0) in local space might now be at (5, 2, -3) in world space, depending on its position in the scene.
+- View Matrix is used to move from world space to view space.
+
+View transformation: Transform the vertex position from world space to `view space` using the viewMatrix.
+
+### View space (Camera Space)
+
+- This is the space as seen from the camera's perspective.
+- It's like you're looking through the camera lens, so the object's position is now relative to the camera.
+- For example, if the camera is at (0, 0, 0) and the cube is in front of it, the cube's position is transformed to reflect how the camera "sees" it.
+  Projection Matrix is used to move from view space to clip space.
+
+Projection transformation: Transform the vertex position from view space to `clip space` using the projectionMatrix.
 
 ### Clip space
+
+- This is a space where the object is ready to be projected onto the screen.
+- It’s a 2D representation of the scene, but still in a normalized coordinate system, ready for further processing.
+  Once the GPU performs the perspective divide (dividing by w), it converts the positions into Normalized Device Coordinates (NDC), where (0, 0) is the center of the screen.
+
+### In last step, what is the Perspective Divide?
+
+- The perspective divide is the process where the clip space coordinates (which are 4D: x, y, z, and w) are divided by the w component to produce Normalized Device Coordinates (NDC).
+- The formula is simple:
+
+```glsl
+   NDC coordinates = (𝑥/𝑤, 𝑦/𝑤, 𝑧/𝑤)
+```
+
+- This is called the perspective divide because it ensures that objects farther from the camera appear smaller, giving the scene a perspective effect.
+
+### Why Divide by w?
+
+- The w component comes from the projection matrix, which applies perspective distortion.
+- After projection, w encodes the depth information (distance from the camera).
+- Dividing by w scales the x, y, and z values appropriately, so objects further away are scaled down.
+- For example:
+
+```glsl
+   An object at (4, 4, 10) in clip space with w = 10 becomes:
+   NDC = (0.4,0.4,1.0) ... This ensures the object is "normalized" relative to its depth.
+```
+
+### Normalized Device Coordinates (NDC)
+
+- After the perspective divide:
+- The x and y values are now within a fixed range of [-1, 1].
+- The center of the screen is (0, 0).
+- Edges of the screen correspond to:
+
+```glsl
+   x = -1 (left), x = 1 (right)
+   y = -1 (bottom), y = 1 (top)
+```
+
+### epth in NDC (z)
+
+- The z-value is also normalized:
+- Typically, z is mapped to the range [0, 1] (or sometimes [-1, 1], depending on the graphics API).
+- This value is used for depth testing to determine which objects are in front of others.
+
+### Why Is This Important?
+
+- The NDC is a standardized space, making it easier for the GPU to:
+- Map positions to screen pixels during rasterization.
+- Cull objects (discard those outside the range [-1, 1], as they won't appear on screen).
+- Perform depth testing using the normalized z-values
 
 ### Orthographic projection
 
