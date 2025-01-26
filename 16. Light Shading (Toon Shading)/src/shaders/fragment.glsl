@@ -20,16 +20,42 @@ vec3 directionalLight(vec3 color, float intensity, vec3 normal, vec3 lightPositi
     float shading = dot(normal, lightDirection);
     shading = clamp(shading, 0.0, 1.0);
 
+    // Single tone
     // For Toon light effect add stepiness
-    shading = smoothstep(0.5, 0.505, shading);
+    // shading = smoothstep(0.5, 0.505, shading);
+
+    // Three-tone shading (using step functions to create discrete intensity levels)
+    float tone1 = step(0.5, shading);
+    float tone2 = step(0.25, shading) * (1.0 - tone1);
+    shading = tone1 * 2.0 + tone2 * 1.0;
+
+    // Five-tone shading (using step functions to create discrete intensity levels)
+    // float tone1 = step(0.8, shading);
+    // float tone2 = step(0.6, shading) * (1.0 - tone1);
+    // float tone3 = step(0.4, shading) * (1.0 - tone1 - tone2);
+    // float tone4 = step(0.2, shading) * (1.0 - tone1 - tone2 - tone3);
+    // shading = tone1 * 4.0 + tone2 * 3.0 + tone3 * 2.0 + tone4 * 1.0;
 
     // Specular highlights
     float specular = dot(lightReflection, viewDirection);
     specular = clamp(specular, 0.0, 1.0);
     specular = pow(specular, specularPower);
 
+    // Single tone
     // For Toon light effect add stepiness
-    specular = smoothstep(0.5, 0.505, specular) * specular;
+    // specular = smoothstep(0.5, 0.505, specular) * specular;
+
+    // Three-tone specular (discrete steps)
+    float specularTone1 = step(0.5, specular);
+    float specularTone2 = step(0.25, specular) * (1.0 - specularTone1);
+    specular = specularTone1 * 2.0 + specularTone2 * 1.0;
+
+    // Five-tone specular (discrete steps)
+    // float specularTone1 = step(0.8, specular);
+    // float specularTone2 = step(0.6, specular) * (1.0 - specularTone1);
+    // float specularTone3 = step(0.4, specular) * (1.0 - specularTone1 - specularTone2);
+    // float specularTone4 = step(0.2, specular) * (1.0 - specularTone1 - specularTone2 - specularTone3);
+    // specular = specularTone1 * 4.0 + specularTone2 * 3.0 + specularTone3 * 2.0 + specularTone4 * 1.0;
 
     return color * intensity * (shading + specular);
 }

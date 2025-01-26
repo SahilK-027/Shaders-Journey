@@ -63,13 +63,13 @@ class ShaderRenderer {
         uLightColor: {
           value: new THREE.Color("#fff9eb"),
         },
-        uLightIntensity: { value: 1.0 },
+        uLightIntensity: { value: 0.7 },
         uLightPosition: { value: new THREE.Vector3(1.0, 1.0, 1.0) },
         uSpecularPower: { value: 50.0 },
         uRimLightColor: {
           value: new THREE.Color("#fff9eb"),
         },
-        uRimLightPower: { value: 5.0 },
+        uRimLightPower: { value: 10.0 },
         uEnvironmentReflectionIntensity: { value: 0.01 },
       },
     });
