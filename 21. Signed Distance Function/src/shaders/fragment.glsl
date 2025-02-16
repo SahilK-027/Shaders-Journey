@@ -1,6 +1,9 @@
 uniform float uTime;
 varying vec2 vUv;
 
+// Get 2D SDF here
+// https://iquilezles.org/articles/distfunctions2d/
+
 float inverseLerp(float v, float minVal, float maxVal) {
     return (v - minVal) / (maxVal - minVal);
 }
