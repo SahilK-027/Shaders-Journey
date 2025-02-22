@@ -27,6 +27,18 @@ float sdfEquilateralTriangle(in vec2 p, in float r) {
     return -length(p) * sign(p.y);
 }
 
+float sdfCircleWave(in vec2 p, in float tb, in float ra, in float thickness)
+{
+    tb = 3.1415927 * 5.0 / 6.0 * max(tb, 0.0001);
+    vec2 co = ra * vec2(sin(tb), cos(tb));
+    p.x = abs(mod(p.x, co.x * 4.0) - co.x * 2.0);
+    vec2 p1 = p;
+    vec2 p2 = vec2(abs(p.x - 2.0 * co.x), -p.y + 2.0 * co.y);
+    float d1 = ((co.y * p1.x > co.x * p1.y) ? length(p1 - co) : abs(length(p1) - ra));
+    float d2 = ((co.y * p2.x > co.x * p2.y) ? length(p2 - co) : abs(length(p2) - ra));
+    return min(d1, d2) - thickness;
+}
+
 mat2 rotate2d(float angle) {
     float s = sin(angle);
     float c = cos(angle);
@@ -68,4 +80,9 @@ float softOpSubtraction(float d1, float d2, float k) {
 
 float softMinValue(float a, float b, float k) {
     return remap(a - b, -1.0 / k, 1.0 / k, 0.0, 1.0);
+}
+
+float hash(vec2 seed) {
+    float t = dot(seed, vec2(27.548778, 69.4567876));
+    return sin(t);
 }
