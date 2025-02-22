@@ -21,15 +21,17 @@ const vec3 NIGHT_COLOR2 = vec3(0.0, 0.0471, 0.2118);
 
 // Color Multipliers (for clouds and water)
 const vec3 MORNING_COLOR_MULTIPLIER = vec3(1.0, 0.97, 0.9);
-const vec3 MIDDAY_COLOR_MULTIPLIER = vec3(0.65, 0.83, 1.0);
+const vec3 MIDDAY_COLOR_MULTIPLIER_WATER = vec3(0.62, 0.82, 1.0);
+const vec3 MIDDAY_COLOR_MULTIPLIER_CLOUD = vec3(0.84, 0.93, 1.0);
 const vec3 EVENING_COLOR_MULTIPLIER_WATER = vec3(1.0, 0.52, 0.79);
-const vec3 EVENING_COLOR_MULTIPLIER_CLOUD = vec3(1.0, 0.76, 0.89);
-const vec3 NIGHT_COLOR_MULTIPLIER = vec3(0.4);
+const vec3 EVENING_COLOR_MULTIPLIER_CLOUD = vec3(1.0, 0.77, 0.76);
+const vec3 NIGHT_COLOR_MULTIPLIER_WATER = vec3(0.4);
+const vec3 NIGHT_COLOR_MULTIPLIER_CLOUD = vec3(0.68);
 
 // Cloud parameters
 const vec3 CLOUD_COLOR = vec3(1.0);
 const vec3 CLOUD_SHADOW_COLOR = vec3(0.0);
-const float NUM_CLOUDS = 21.0;
+const float NUM_CLOUDS = 15.0;
 
 // Water Colors
 const vec3 WATER_COLOR1 = vec3(0.48, 0.83, 1.0);
@@ -37,7 +39,8 @@ const vec3 WATER_COLOR2 = vec3(0.3, 0.71, 1.0);
 const vec3 WATER_COLOR3 = vec3(0.17, 0.55, 0.85);
 const vec3 WATER_COLOR4 = vec3(0.0, 0.45, 0.91);
 const vec3 WATER_COLOR5 = vec3(0.0, 0.37, 0.75);
-float waterShadowIntensity = 0.1;
+const vec3 WATER_SHADOW_COLOR = vec3(0.0, 0.13, 0.25);
+const float waterShadowIntensity = 0.15;
 
 //--------------------------------------
 // Helper Functions
@@ -84,7 +87,7 @@ vec3 drawBackground(float dayTime) {
 // Draws clouds using SDFs and applies a day-cycle multiplier.
 vec3 drawClouds(vec2 centeredUVs, vec3 col, float dayTime) {
     vec3 color = col;
-    vec3 cloudMultiplier = getDayCycleColor(MORNING_COLOR_MULTIPLIER, MIDDAY_COLOR_MULTIPLIER, EVENING_COLOR_MULTIPLIER_CLOUD, NIGHT_COLOR_MULTIPLIER, dayTime);
+    vec3 cloudMultiplier = getDayCycleColor(MORNING_COLOR_MULTIPLIER, MIDDAY_COLOR_MULTIPLIER_CLOUD, EVENING_COLOR_MULTIPLIER_CLOUD, NIGHT_COLOR_MULTIPLIER_CLOUD, dayTime);
 
     for (float i = 0.0; i < NUM_CLOUDS; i += 1.0) {
         float cloudSize = mix(2.0, 1.0, (i / NUM_CLOUDS) + 0.1 * hash(vec2(i))) * 1.5;
@@ -134,17 +137,31 @@ vec3 drawWater(vec2 centeredUVs, vec3 col, float dayTime) {
     float r2_adj = 0.178 * perspectiveFactor;
 
     float waveSDF = sdfCircleWave(waveBase + vec2(0.0, 0.5) + offset1, r0, 3.0, 0.9);
+    float waveShadowSDF = sdfCircleWave(waveBase + vec2(0.0, 0.6) + offset1, r0, 3.0, 0.9);
     float waveSDF2 = sdfCircleWave(waveBase + vec2(0.0, 1.2) + offset2, r1_adj, 3.0, 0.9);
+    float waveShadowSDF2 = sdfCircleWave(waveBase + vec2(0.0, 1.3) + offset2, r1_adj, 3.0, 0.9);
     float waveSDF3 = sdfCircleWave(waveBase + vec2(0.9, 1.7) + offset3, 0.1, 3.0, 0.9);
+    float waveShadowSDF3 = sdfCircleWave(waveBase + vec2(0.9, 1.8) + offset3, 0.1, 3.0, 0.9);
     float waveSDF4 = sdfCircleWave(waveBase + vec2(-0.9, 2.41) + offset4, r2_adj, 3.0, 0.9);
+    float waveShadowSDF4 = sdfCircleWave(waveBase + vec2(-0.9, 2.51) + offset4, r2_adj, 3.0, 0.9);
     float waveSDF5 = sdfCircleWave(waveBase + vec2(0.0, 3.0) + offset5, 0.156, 3.0, 0.9);
+    float waveShadowSDF5 = sdfCircleWave(waveBase + vec2(0.0, 3.1) + offset5, 0.156, 3.0, 0.9);
 
-    vec3 waterMultiplier = getDayCycleColor(MORNING_COLOR_MULTIPLIER, MIDDAY_COLOR_MULTIPLIER, EVENING_COLOR_MULTIPLIER_WATER, NIGHT_COLOR_MULTIPLIER, dayTime);
+    vec3 waterMultiplier = getDayCycleColor(MORNING_COLOR_MULTIPLIER, MIDDAY_COLOR_MULTIPLIER_WATER, EVENING_COLOR_MULTIPLIER_WATER, NIGHT_COLOR_MULTIPLIER_WATER, dayTime);
 
+    color = mix(mix(color, WATER_SHADOW_COLOR, waterShadowIntensity), color, smoothstep(0.0, 0.2, waveShadowSDF));
     color = mix(WATER_COLOR1 * waterMultiplier, color, smoothstep(0.0, 0.0075, waveSDF));
+
+    color = mix(mix(color, WATER_SHADOW_COLOR, waterShadowIntensity), color, smoothstep(0.0, 0.2, waveShadowSDF2));
     color = mix(WATER_COLOR2 * waterMultiplier, color, smoothstep(0.0, 0.0075, waveSDF2));
+
+    color = mix(mix(color, WATER_SHADOW_COLOR, waterShadowIntensity), color, smoothstep(0.0, 0.2, waveShadowSDF3));
     color = mix(WATER_COLOR3 * waterMultiplier, color, smoothstep(0.0, 0.0075, waveSDF3));
+
+    color = mix(mix(color, WATER_SHADOW_COLOR, waterShadowIntensity), color, smoothstep(0.0, 0.2, waveShadowSDF4));
     color = mix(WATER_COLOR4 * waterMultiplier, color, smoothstep(0.0, 0.0075, waveSDF4));
+
+    color = mix(mix(color, WATER_SHADOW_COLOR, waterShadowIntensity), color, smoothstep(0.0, 0.2, waveShadowSDF5));
     color = mix(WATER_COLOR5 * waterMultiplier, color, smoothstep(0.0, 0.0075, waveSDF5));
 
     return color;
