@@ -18,10 +18,11 @@ const vec3 EVENING_COLOR2 = vec3(1.0, 0.39, 0.18);
 const vec3 NIGHT_COLOR1 = vec3(0.0, 0.2118, 0.3529);
 const vec3 NIGHT_COLOR2 = vec3(0.0, 0.0471, 0.2118);
 
-const vec3 MORNING_COLOR_MULTIPLIER = vec3(1.0, 0.97, 0.95);
+const vec3 MORNING_COLOR_MULTIPLIER = vec3(1.0, 0.97, 0.9);
 const vec3 MIDDAY_COLOR_MULTIPLIER = vec3(0.65, 0.83, 1.0);
-const vec3 EVENING_COLOR_MULTIPLIER = vec3(1.0, 0.52, 0.79);
-const vec3 NIGHT_COLOR_MULTIPLIER = vec3(0.5);
+const vec3 EVENING_COLOR_MULTIPLIER_WATER = vec3(1.0, 0.52, 0.79);
+const vec3 EVENING_COLOR_MULTIPLIER_CLOUD = vec3(1.0, 0.76, 0.89);
+const vec3 NIGHT_COLOR_MULTIPLIER = vec3(0.4);
 
 // Cloud colors & parameters
 const vec3 CLOUD_COLOR = vec3(1.0);
@@ -81,9 +82,24 @@ vec3 drawBackground() {
 // Draws clouds using SDFs and blends them into the scene color
 vec3 drawClouds(vec2 centeredUVs, vec3 col) {
     vec3 color = col;
+
+    // Compute environment-based water color multiplier (changes with time-of-day)
+    vec3 CLOUD_COLOR_MULTIPLIER = vec3(1.0);
+    float dayLength = 40.0;
+    float dayTime = mod(uTime, dayLength);
+    if (dayTime < dayLength * 0.25) {
+        CLOUD_COLOR_MULTIPLIER = mix(MORNING_COLOR_MULTIPLIER, MIDDAY_COLOR_MULTIPLIER, smoothstep(0.0, dayLength * 0.25, dayTime));
+    } else if (dayTime < dayLength * 0.5) {
+        CLOUD_COLOR_MULTIPLIER = mix(MIDDAY_COLOR_MULTIPLIER, EVENING_COLOR_MULTIPLIER_CLOUD, smoothstep(dayLength * 0.25, dayLength * 0.5, dayTime));
+    } else if (dayTime < dayLength * 0.75) {
+        CLOUD_COLOR_MULTIPLIER = mix(EVENING_COLOR_MULTIPLIER_CLOUD, NIGHT_COLOR_MULTIPLIER, smoothstep(dayLength * 0.5, dayLength * 0.75, dayTime));
+    } else {
+        CLOUD_COLOR_MULTIPLIER = mix(NIGHT_COLOR_MULTIPLIER, MORNING_COLOR_MULTIPLIER, smoothstep(dayLength * 0.75, dayLength, dayTime));
+    }
+
     for (float i = 0.0; i < NUM_CLOUDS; i += 1.0) {
         float cloudSize = mix(2.0, 1.0, (i / NUM_CLOUDS) + 0.1 * hash(vec2(i))) * 1.5;
-        float cloudSpeed = cloudSize * hash(vec2(i)) * 0.25;
+        float cloudSpeed = cloudSize * hash(vec2(i * cloudSize)) * 0.25;
         float cloudRandomOffsetY = (7.0 * hash(vec2(i))) - 8.0;
         vec2 cloudOffset = vec2(i + uTime * cloudSpeed, cloudRandomOffsetY);
         vec2 cloudPosition = centeredUVs + cloudOffset;
@@ -94,7 +110,8 @@ vec3 drawClouds(vec2 centeredUVs, vec3 col) {
         float cloudSDF = sdfCloud(cloudPosition * cloudSize);
         float shadowIntensity = 0.2;
         color = mix(mix(color, CLOUD_SHADOW_COLOR, shadowIntensity), color, smoothstep(0.0, 0.9, cloudShadow));
-        color = mix(CLOUD_COLOR, color, smoothstep(0.0, 0.0075, cloudSDF));
+        vec3 randomFactor = mix(vec3(0.75), vec3(1.1), vec3(hash(vec2(i))));
+        color = mix(CLOUD_COLOR * CLOUD_COLOR_MULTIPLIER * randomFactor, color, smoothstep(0.0, 0.0075, cloudSDF));
     }
     return color;
 }
@@ -141,9 +158,9 @@ vec3 drawWater(vec2 centeredUVs, vec3 col) {
     if (dayTime < dayLength * 0.25) {
         WATER_COLOR_MULTIPLIER = mix(MORNING_COLOR_MULTIPLIER, MIDDAY_COLOR_MULTIPLIER, smoothstep(0.0, dayLength * 0.25, dayTime));
     } else if (dayTime < dayLength * 0.5) {
-        WATER_COLOR_MULTIPLIER = mix(MIDDAY_COLOR_MULTIPLIER, EVENING_COLOR_MULTIPLIER, smoothstep(dayLength * 0.25, dayLength * 0.5, dayTime));
+        WATER_COLOR_MULTIPLIER = mix(MIDDAY_COLOR_MULTIPLIER, EVENING_COLOR_MULTIPLIER_WATER, smoothstep(dayLength * 0.25, dayLength * 0.5, dayTime));
     } else if (dayTime < dayLength * 0.75) {
-        WATER_COLOR_MULTIPLIER = mix(EVENING_COLOR_MULTIPLIER, NIGHT_COLOR_MULTIPLIER, smoothstep(dayLength * 0.5, dayLength * 0.75, dayTime));
+        WATER_COLOR_MULTIPLIER = mix(EVENING_COLOR_MULTIPLIER_WATER, NIGHT_COLOR_MULTIPLIER, smoothstep(dayLength * 0.5, dayLength * 0.75, dayTime));
     } else {
         WATER_COLOR_MULTIPLIER = mix(NIGHT_COLOR_MULTIPLIER, MORNING_COLOR_MULTIPLIER, smoothstep(dayLength * 0.75, dayLength, dayTime));
     }
