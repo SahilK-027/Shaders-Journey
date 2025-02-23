@@ -1,4 +1,5 @@
 uniform float uTime;
+uniform float uRandomFloat;
 uniform vec2 uResolution;
 varying vec2 vUv;
 
@@ -20,9 +21,9 @@ const vec3 NIGHT_COLOR1 = vec3(0.0, 0.2118, 0.3529);
 const vec3 NIGHT_COLOR2 = vec3(0.0, 0.0471, 0.2118);
 
 // Color Multipliers (for clouds and water)
-const vec3 MORNING_COLOR_MULTIPLIER = vec3(1.0, 0.97, 0.9);
-const vec3 MIDDAY_COLOR_MULTIPLIER_WATER = vec3(0.62, 0.82, 1.0);
-const vec3 MIDDAY_COLOR_MULTIPLIER_CLOUD = vec3(0.84, 0.93, 1.0);
+const vec3 MORNING_COLOR_MULTIPLIER = vec3(1.0, 0.97, 0.91);
+const vec3 MIDDAY_COLOR_MULTIPLIER_WATER = vec3(0.55, 0.79, 1.0);
+const vec3 MIDDAY_COLOR_MULTIPLIER_CLOUD = vec3(0.72, 0.88, 1.0);
 const vec3 EVENING_COLOR_MULTIPLIER_WATER = vec3(1.0, 0.52, 0.79);
 const vec3 EVENING_COLOR_MULTIPLIER_CLOUD = vec3(1.0, 0.77, 0.76);
 const vec3 NIGHT_COLOR_MULTIPLIER_WATER = vec3(0.4);
@@ -97,21 +98,23 @@ vec3 drawClouds(vec2 centeredUVs, vec3 col, float dayTime) {
     vec3 cloudMultiplier = getDayCycleColor(MORNING_COLOR_MULTIPLIER, MIDDAY_COLOR_MULTIPLIER_CLOUD, EVENING_COLOR_MULTIPLIER_CLOUD, NIGHT_COLOR_MULTIPLIER_CLOUD, dayTime);
 
     for (float i = 0.0; i < NUM_CLOUDS; i += 1.0) {
-        float cloudSize = mix(2.0, 1.0, (i / NUM_CLOUDS) + 0.1 * hash(vec2(i))) * 1.5;
-        float cloudSpeed = cloudSize * hash(vec2(i * cloudSize)) * 0.25;
+        float cloudSize = mix(2.0, 1.0, (i / NUM_CLOUDS) + 0.1 * hash(vec2(i))) * 1.6;
+        float cloudSpeedHash = remap(hash(vec2(i * cloudSize + uRandomFloat)), -1.0, 1.0, 0.8, 1.0);
+        float cloudSpeed = cloudSize * cloudSpeedHash * 0.12;
         float cloudRandomOffsetY = (7.0 * hash(vec2(i))) - 8.0;
 
-        vec2 cloudOffset = vec2(i + uTime * cloudSpeed, cloudRandomOffsetY);
+        vec2 cloudOffset = vec2(i * (uRandomFloat + 2.0) + uTime * cloudSpeed, cloudRandomOffsetY);
         vec2 cloudPosition = centeredUVs + cloudOffset;
         cloudPosition.x = mod(cloudPosition.x, uResolution.x / 100.0);
-        cloudPosition -= vec2(uResolution.y / 100.0) * 0.5;
+        cloudPosition -= vec2(uResolution / 100.0) * 0.5;
 
         float cloudShadow = sdfCloud(cloudPosition * cloudSize + 0.4) + 0.6;
         float cloudSDF = sdfCloud(cloudPosition * cloudSize);
         float shadowIntensity = 0.2;
 
         color = mix(mix(color, CLOUD_SHADOW_COLOR, shadowIntensity), color, smoothstep(0.0, 0.9, cloudShadow));
-        vec3 randomFactor = mix(vec3(0.75), vec3(1.1), vec3(hash(vec2(i))));
+        float randomColorHash = remap(hash(vec2(i)), -1.0, 1.0, 0.5, 1.0);
+        vec3 randomFactor = mix(vec3(0.75), vec3(1.1), vec3(randomColorHash));
         color = mix(CLOUD_COLOR * cloudMultiplier * randomFactor, color, smoothstep(0.0, 0.0075, cloudSDF));
     }
     return color;

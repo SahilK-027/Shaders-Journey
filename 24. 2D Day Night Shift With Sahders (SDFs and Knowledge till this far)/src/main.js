@@ -49,6 +49,9 @@ class ShaderRenderer {
         uResolution: {
           value: new THREE.Vector2(this.sizes.width, this.sizes.height),
         },
+        uRandomFloat: {
+          value: Math.random() + 0.1,
+        },
       },
     });
 
