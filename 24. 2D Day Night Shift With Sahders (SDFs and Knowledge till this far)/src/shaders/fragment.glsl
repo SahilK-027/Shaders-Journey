@@ -8,7 +8,7 @@ varying vec2 vUv;
 //--------------------------------------
 // Constants
 //--------------------------------------
-const float DAY_LENGTH = 20.0;
+const float DAY_LENGTH = 4.0;
 
 // Background Colors
 const vec3 MORNING_COLOR1 = vec3(1.0, 0.89, 0.79);
@@ -21,7 +21,7 @@ const vec3 NIGHT_COLOR1 = vec3(0.0, 0.2118, 0.3529);
 const vec3 NIGHT_COLOR2 = vec3(0.0, 0.0471, 0.2118);
 
 // Color Multipliers (for clouds and water)
-const vec3 MORNING_COLOR_MULTIPLIER = vec3(1.0, 0.97, 0.91);
+const vec3 MORNING_COLOR_MULTIPLIER = vec3(1.0, 0.94, 0.83);
 const vec3 MIDDAY_COLOR_MULTIPLIER_WATER = vec3(0.55, 0.79, 1.0);
 const vec3 MIDDAY_COLOR_MULTIPLIER_CLOUD = vec3(0.72, 0.88, 1.0);
 const vec3 EVENING_COLOR_MULTIPLIER_WATER = vec3(1.0, 0.52, 0.79);
@@ -44,11 +44,15 @@ const vec3 WATER_SHADOW_COLOR = vec3(0.0, 0.13, 0.25);
 const float waterShadowIntensity = 0.15;
 
 // Sun colors
-const vec3 MORNING_COLOR_MULTIPLIER_SUN = vec3(1.0, 0.68, 0.09);
-const vec3 MIDDAY_COLOR_MULTIPLIER_SUN = vec3(1.0, 0.96, 0.85);
+const vec3 MORNING_COLOR_MULTIPLIER_SUN = vec3(1.0, 0.66, 0.15);
+const vec3 MIDDAY_COLOR_MULTIPLIER_SUN = vec3(1.0, 0.78, 0.11);
 const vec3 EVENING_COLOR_MULTIPLIER_SUN = vec3(1.0, 0.36, 0.36);
-const vec3 NIGHT_COLOR_MULTIPLIER_SUN = vec3(0.68);
-const vec3 SUN_COLOR = vec3(1.0, 0.77, 0.0);
+const vec3 NIGHT_COLOR_MULTIPLIER_SUN = vec3(1.0, 0.33, 0.18);
+const vec3 SUN_COLOR = vec3(1.0, 0.97, 0.86);
+
+// Add new moon constants (place these with your other constant definitions)
+const vec3 MOON_COLOR = vec3(0.85, 0.85, 1.0);
+const vec3 MOON_COLOR_MULTIPLIER = vec3(0.8, 0.85, 1.0);
 
 //--------------------------------------
 // Helper Functions
@@ -180,7 +184,7 @@ vec3 drawWater(vec2 centeredUVs, vec3 col, float dayTime) {
 vec3 drawSun(vec2 centeredUVs, vec3 col, float dayTime) {
     vec3 color = col;
     vec3 sunColorMultiplier = getDayCycleColor(
-            MORNING_COLOR_MULTIPLIER,
+            MORNING_COLOR_MULTIPLIER_SUN,
             MIDDAY_COLOR_MULTIPLIER_SUN,
             EVENING_COLOR_MULTIPLIER_SUN,
             NIGHT_COLOR_MULTIPLIER_SUN,
@@ -220,6 +224,36 @@ vec3 drawSun(vec2 centeredUVs, vec3 col, float dayTime) {
     return color;
 }
 
+vec3 drawMoon(vec2 centeredUVs, vec3 col, float dayTime) {
+    vec3 color = col;
+    vec2 moonOffset = vec2(0.0);
+
+    if (dayTime >= DAY_LENGTH * 0.5 && dayTime < DAY_LENGTH * 0.75) {
+        float t = saturate(inverseLerp(dayTime, DAY_LENGTH * 0.5, DAY_LENGTH * 0.75));
+        moonOffset.y = mix(-4.0, 0.2, t);
+    }
+    else if (dayTime >= DAY_LENGTH * 0.75 && dayTime < DAY_LENGTH) {
+        float t = saturate(inverseLerp(dayTime, DAY_LENGTH * 0.75, DAY_LENGTH));
+        moonOffset.y = mix(0.2, -4.0, t);
+    }
+    else {
+        return color;
+    }
+
+    vec2 baseOffset = vec2(5.0, 2.5);
+    moonOffset += baseOffset;
+
+    vec2 moonPos = centeredUVs - (0.5 * uResolution / 100.0) - moonOffset;
+    float moonSDF = sdfCircle(moonPos, 0.8);
+    color = mix(MOON_COLOR * MOON_COLOR_MULTIPLIER, color, smoothstep(0.0, 0.0075, moonSDF));
+
+    float pulse = remap(sin(uTime * 2.0), -1.0, 1.0, 0.3, 1.0);
+    float glowFactor = 1.0 - smoothstep(0.1, 0.8, moonSDF);
+    color += MOON_COLOR * MOON_COLOR_MULTIPLIER * glowFactor * 0.125 * pulse;
+
+    return color;
+}
+
 //--------------------------------------
 // Main
 //--------------------------------------
@@ -230,6 +264,7 @@ void main() {
     vec3 color = drawBackground(dayTime);
 
     color = drawSun(centeredUVs, color, dayTime);
+    color = drawMoon(centeredUVs, color, dayTime);
     color = drawClouds(centeredUVs, color, dayTime);
     color = drawWater(centeredUVs, color, dayTime);
 
