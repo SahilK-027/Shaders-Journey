@@ -42,6 +42,13 @@ const vec3 WATER_COLOR5 = vec3(0.0, 0.37, 0.75);
 const vec3 WATER_SHADOW_COLOR = vec3(0.0, 0.13, 0.25);
 const float waterShadowIntensity = 0.15;
 
+// Sun colors
+const vec3 MORNING_COLOR_MULTIPLIER_SUN = vec3(1.0, 0.68, 0.09);
+const vec3 MIDDAY_COLOR_MULTIPLIER_SUN = vec3(1.0, 0.96, 0.85);
+const vec3 EVENING_COLOR_MULTIPLIER_SUN = vec3(1.0, 0.36, 0.36);
+const vec3 NIGHT_COLOR_MULTIPLIER_SUN = vec3(0.68);
+const vec3 SUN_COLOR = vec3(1.0, 0.77, 0.0);
+
 //--------------------------------------
 // Helper Functions
 //--------------------------------------
@@ -167,6 +174,25 @@ vec3 drawWater(vec2 centeredUVs, vec3 col, float dayTime) {
     return color;
 }
 
+vec3 drawSun(vec2 centeredUVs, vec3 col, float dayTime) {
+    vec3 color = col;
+
+    vec3 sunColorMultiplier = getDayCycleColor(MORNING_COLOR_MULTIPLIER, MIDDAY_COLOR_MULTIPLIER_SUN, EVENING_COLOR_MULTIPLIER_SUN, NIGHT_COLOR_MULTIPLIER_SUN, dayTime);
+    // Sun
+    if (dayTime < DAY_LENGTH * 0.75) {
+        vec2 sunOffset = vec2(-5.0, 2.5);
+        vec2 sunPos = centeredUVs - (0.5 * uResolution / 100.0) - sunOffset;
+
+        float sunSDF = sdfCircle(sunPos, 0.8);
+        color = mix(SUN_COLOR * sunColorMultiplier, color, smoothstep(0.0, 0.0075, sunSDF));
+
+        float pulse = remap(sin(uTime * 2.0), -1.0, 1.0, 0.3, 1.0);
+        float glowFactor = 1.0 - smoothstep(0.1, 0.8, sunSDF);
+        color += SUN_COLOR * sunColorMultiplier * glowFactor * 0.125 * pulse;
+    }
+    return color;
+}
+
 //--------------------------------------
 // Main
 //--------------------------------------
@@ -175,6 +201,8 @@ void main() {
     vec2 centeredUVs = (vUv * uResolution / 100.0);
 
     vec3 color = drawBackground(dayTime);
+
+    color = drawSun(centeredUVs, color, dayTime);
     color = drawClouds(centeredUVs, color, dayTime);
     color = drawWater(centeredUVs, color, dayTime);
 
