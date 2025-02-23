@@ -86,3 +86,7 @@ float hash(vec2 seed) {
     float t = dot(seed, vec2(27.548778, 69.4567876));
     return sin(t);
 }
+
+float saturate(float t) {
+    return clamp(t, 0.0, 1.0);
+}

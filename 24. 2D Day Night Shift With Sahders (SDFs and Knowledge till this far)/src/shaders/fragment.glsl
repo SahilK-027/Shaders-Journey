@@ -3,12 +3,12 @@ uniform float uRandomFloat;
 uniform vec2 uResolution;
 varying vec2 vUv;
 
-#include "./helpers/utils.glsl"
+#include "./helpers/utils.glsl";
 
 //--------------------------------------
 // Constants
 //--------------------------------------
-const float DAY_LENGTH = 40.0;
+const float DAY_LENGTH = 20.0;
 
 // Background Colors
 const vec3 MORNING_COLOR1 = vec3(1.0, 0.89, 0.79);
@@ -179,13 +179,37 @@ vec3 drawWater(vec2 centeredUVs, vec3 col, float dayTime) {
 
 vec3 drawSun(vec2 centeredUVs, vec3 col, float dayTime) {
     vec3 color = col;
+    vec3 sunColorMultiplier = getDayCycleColor(
+            MORNING_COLOR_MULTIPLIER,
+            MIDDAY_COLOR_MULTIPLIER_SUN,
+            EVENING_COLOR_MULTIPLIER_SUN,
+            NIGHT_COLOR_MULTIPLIER_SUN,
+            dayTime
+        );
 
-    vec3 sunColorMultiplier = getDayCycleColor(MORNING_COLOR_MULTIPLIER, MIDDAY_COLOR_MULTIPLIER_SUN, EVENING_COLOR_MULTIPLIER_SUN, NIGHT_COLOR_MULTIPLIER_SUN, dayTime);
-    // Sun
-    if (dayTime < DAY_LENGTH * 0.75) {
-        vec2 sunOffset = vec2(-5.0, 2.5);
+    // Only draw the sun if dayTime is less than 75% of the day.
+    if (dayTime < DAY_LENGTH * 0.7) {
+        vec2 sunOffset;
+        // Sunrise: 0.0 -> 0.25 of the day: interpolate from -4.0 to 2.5 (y axis)
+        if (dayTime < DAY_LENGTH * 0.25) {
+            float t = saturate(inverseLerp(dayTime, 0.0, DAY_LENGTH * 0.25));
+            sunOffset = vec2(0.0, mix(-4.0, 0.2, t));
+        }
+        // Midday: 0.25 -> 0.5 of the day: sun stays at peak.
+        else if (dayTime < DAY_LENGTH * 0.5) {
+            sunOffset = vec2(0.0, 0.2);
+        }
+        // Sunset: 0.5 -> 0.75 of the day: interpolate from 0.2 down to -4.0.
+        else {
+            float t = saturate(inverseLerp(dayTime, DAY_LENGTH * 0.5, DAY_LENGTH * 0.7));
+            sunOffset = vec2(0.0, mix(0.2, -4.0, t));
+        }
+
+        // Optionally, add a horizontal baseline offset.
+        vec2 baseOffset = vec2(-5.0, 2.5);
+        sunOffset += baseOffset;
+
         vec2 sunPos = centeredUVs - (0.5 * uResolution / 100.0) - sunOffset;
-
         float sunSDF = sdfCircle(sunPos, 0.8);
         color = mix(SUN_COLOR * sunColorMultiplier, color, smoothstep(0.0, 0.0075, sunSDF));
 
