@@ -51,8 +51,8 @@ const vec3 NIGHT_COLOR_MULTIPLIER_SUN = vec3(1.0, 0.33, 0.18);
 const vec3 SUN_COLOR = vec3(1.0, 0.97, 0.86);
 
 // Add new moon constants (place these with your other constant definitions)
-const vec3 MOON_COLOR = vec3(0.85, 0.85, 1.0);
-const vec3 MOON_COLOR_MULTIPLIER = vec3(0.8, 0.85, 1.0);
+const vec3 MOON_COLOR = vec3(0.96, 1.0, 1.0);
+const vec3 MOON_COLOR_MULTIPLIER = vec3(1.0, 1.0, 0.98);
 
 //--------------------------------------
 // Helper Functions
@@ -80,6 +80,15 @@ float sdfCloud(vec2 pixelCords) {
     float puff3 = sdfEllipse(pixelCords + vec2(0.9, 1.0), vec2(1.0, 0.75));
     float puff4 = sdfEllipse(pixelCords - vec2(1.5, -1.35), vec2(0.6, 0.4));
     return min(puff1, min(puff2, min(puff3, puff4)));
+}
+
+float sdfMoon(vec2 pixelCords) {
+    float d = opSubtraction(
+            sdfCircle(pixelCords + vec2(0.55, 0.0), 0.9),
+            sdfCircle(pixelCords, 0.8)
+        );
+
+    return d;
 }
 
 //--------------------------------------
@@ -244,13 +253,14 @@ vec3 drawMoon(vec2 centeredUVs, vec3 col, float dayTime) {
     moonOffset += baseOffset;
 
     vec2 moonPos = centeredUVs - (0.5 * uResolution / 100.0) - moonOffset;
-    float moonSDF = sdfCircle(moonPos, 0.8);
+    moonPos = rotate2d(3.142 * -0.2) * moonPos;
+
+    float moonSDF = sdfMoon(moonPos);
     color = mix(MOON_COLOR * MOON_COLOR_MULTIPLIER, color, smoothstep(0.0, 0.0075, moonSDF));
 
     float pulse = remap(sin(uTime * 2.0), -1.0, 1.0, 0.3, 1.0);
-    float glowFactor = 1.0 - smoothstep(0.1, 0.8, moonSDF);
-    color += MOON_COLOR * MOON_COLOR_MULTIPLIER * glowFactor * 0.125 * pulse;
-
+    float moonGlow = sdfMoon(moonPos);
+    color += mix(vec3(1.0), vec3(0.0), smoothstep(-0.1, 0.12, moonSDF)) * pulse * 0.25;
     return color;
 }
 
