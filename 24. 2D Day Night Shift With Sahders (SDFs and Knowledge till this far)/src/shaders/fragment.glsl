@@ -8,7 +8,7 @@ varying vec2 vUv;
 //--------------------------------------
 // Constants
 //--------------------------------------
-const float DAY_LENGTH = 4.0;
+const float DAY_LENGTH = 60.0;
 
 // Background Colors
 const vec3 MORNING_COLOR1 = vec3(1.0, 0.89, 0.79);
@@ -50,9 +50,13 @@ const vec3 EVENING_COLOR_MULTIPLIER_SUN = vec3(1.0, 0.36, 0.36);
 const vec3 NIGHT_COLOR_MULTIPLIER_SUN = vec3(1.0, 0.33, 0.18);
 const vec3 SUN_COLOR = vec3(1.0, 0.97, 0.86);
 
-// Add new moon constants (place these with your other constant definitions)
+// Moon colors
 const vec3 MOON_COLOR = vec3(0.96, 1.0, 1.0);
 const vec3 MOON_COLOR_MULTIPLIER = vec3(1.0, 1.0, 0.98);
+
+// Moon colors
+const vec3 STAR_COLOR = vec3(0.984, 0.733, 0.078);
+const float NUM_STARS = 15.0;
 
 //--------------------------------------
 // Helper Functions
@@ -61,14 +65,14 @@ const vec3 MOON_COLOR_MULTIPLIER = vec3(1.0, 1.0, 0.98);
 // Returns a color that cycles through the four provided colors
 // over the full day (DAY_LENGTH). Use for both background and multipliers.
 vec3 getDayCycleColor(vec3 cMorning, vec3 cMidday, vec3 cEvening, vec3 cNight, float dayTime) {
-    if (dayTime < DAY_LENGTH * 0.25)
-        return mix(cMorning, cMidday, smoothstep(0.0, DAY_LENGTH * 0.25, dayTime));
-    else if (dayTime < DAY_LENGTH * 0.5)
-        return mix(cMidday, cEvening, smoothstep(DAY_LENGTH * 0.25, DAY_LENGTH * 0.5, dayTime));
-    else if (dayTime < DAY_LENGTH * 0.75)
-        return mix(cEvening, cNight, smoothstep(DAY_LENGTH * 0.5, DAY_LENGTH * 0.75, dayTime));
+    if (dayTime < DAY_LENGTH * 0.2)
+        return mix(cMorning, cMidday, smoothstep(0.0, DAY_LENGTH * 0.2, dayTime));
+    else if (dayTime < DAY_LENGTH * 0.4)
+        return mix(cMidday, cEvening, smoothstep(DAY_LENGTH * 0.2, DAY_LENGTH * 0.4, dayTime));
+    else if (dayTime < DAY_LENGTH * 0.6)
+        return mix(cEvening, cNight, smoothstep(DAY_LENGTH * 0.4, DAY_LENGTH * 0.6, dayTime));
     else
-        return mix(cNight, cMorning, smoothstep(DAY_LENGTH * 0.75, DAY_LENGTH, dayTime));
+        return mix(cNight, cMorning, smoothstep(DAY_LENGTH * 0.8, DAY_LENGTH, dayTime));
 }
 
 //--------------------------------------
@@ -84,11 +88,25 @@ float sdfCloud(vec2 pixelCords) {
 
 float sdfMoon(vec2 pixelCords) {
     float d = opSubtraction(
-            sdfCircle(pixelCords + vec2(0.55, 0.0), 0.9),
+            sdfCircle(pixelCords + vec2(0.55, 0.0), 0.8),
             sdfCircle(pixelCords, 0.8)
         );
 
     return d;
+}
+
+float sdfStar5(in vec2 p, in float r, in float rf)
+{
+    const vec2 k1 = vec2(0.809016994375, -0.587785252292);
+    const vec2 k2 = vec2(-k1.x, k1.y);
+    p.x = abs(p.x);
+    p -= 2.0 * max(dot(k1, p), 0.0) * k1;
+    p -= 2.0 * max(dot(k2, p), 0.0) * k2;
+    p.x = abs(p.x);
+    p.y -= r;
+    vec2 ba = rf * vec2(-k1.y, k1.x) - vec2(0, 1);
+    float h = clamp(dot(p, ba) / dot(ba, ba), 0.0, r);
+    return length(p - ba * h) * sign(p.y * ba.x - p.x * ba.y);
 }
 
 //--------------------------------------
@@ -200,21 +218,21 @@ vec3 drawSun(vec2 centeredUVs, vec3 col, float dayTime) {
             dayTime
         );
 
-    // Only draw the sun if dayTime is less than 75% of the day.
-    if (dayTime < DAY_LENGTH * 0.7) {
+    // Only draw the sun if dayTime is less
+    if (dayTime < DAY_LENGTH * 0.6) {
         vec2 sunOffset;
-        // Sunrise: 0.0 -> 0.25 of the day: interpolate from -4.0 to 2.5 (y axis)
-        if (dayTime < DAY_LENGTH * 0.25) {
-            float t = saturate(inverseLerp(dayTime, 0.0, DAY_LENGTH * 0.25));
+        // Sunrise: 0.0 -> 0.2 of the day: interpolate from -4.0 to 2.5 (y axis)
+        if (dayTime < DAY_LENGTH * 0.2) {
+            float t = saturate(inverseLerp(dayTime, 0.0, DAY_LENGTH * 0.2));
             sunOffset = vec2(0.0, mix(-4.0, 0.2, t));
         }
-        // Midday: 0.25 -> 0.5 of the day: sun stays at peak.
-        else if (dayTime < DAY_LENGTH * 0.5) {
+        // Midday: 0.2 -> 0.4 of the day: sun stays at peak.
+        else if (dayTime < DAY_LENGTH * 0.4) {
             sunOffset = vec2(0.0, 0.2);
         }
-        // Sunset: 0.5 -> 0.75 of the day: interpolate from 0.2 down to -4.0.
+        // Sunset: 0.4 -> 0.6 of the day: interpolate from 0.2 down to -4.0.
         else {
-            float t = saturate(inverseLerp(dayTime, DAY_LENGTH * 0.5, DAY_LENGTH * 0.7));
+            float t = saturate(inverseLerp(dayTime, DAY_LENGTH * 0.4, DAY_LENGTH * 0.6));
             sunOffset = vec2(0.0, mix(0.2, -4.0, t));
         }
 
@@ -237,15 +255,15 @@ vec3 drawMoon(vec2 centeredUVs, vec3 col, float dayTime) {
     vec3 color = col;
     vec2 moonOffset = vec2(0.0);
 
-    if (dayTime >= DAY_LENGTH * 0.5 && dayTime < DAY_LENGTH * 0.75) {
-        float t = saturate(inverseLerp(dayTime, DAY_LENGTH * 0.5, DAY_LENGTH * 0.75));
+    if (dayTime >= DAY_LENGTH * 0.55 && dayTime < DAY_LENGTH * 0.65) {
+        float t = saturate(inverseLerp(dayTime, DAY_LENGTH * 0.55, DAY_LENGTH * 0.65));
         moonOffset.y = mix(-4.0, 0.2, t);
-    }
-    else if (dayTime >= DAY_LENGTH * 0.75 && dayTime < DAY_LENGTH) {
-        float t = saturate(inverseLerp(dayTime, DAY_LENGTH * 0.75, DAY_LENGTH));
+    } else if (dayTime >= DAY_LENGTH * 0.65 && dayTime < DAY_LENGTH * 0.8) {
+        moonOffset = vec2(0.0, 0.2);
+    } else if (dayTime >= DAY_LENGTH * 0.8 && dayTime < DAY_LENGTH * 0.95) {
+        float t = saturate(inverseLerp(dayTime, DAY_LENGTH * 0.8, DAY_LENGTH * 0.95));
         moonOffset.y = mix(0.2, -4.0, t);
-    }
-    else {
+    } else {
         return color;
     }
 
@@ -253,7 +271,7 @@ vec3 drawMoon(vec2 centeredUVs, vec3 col, float dayTime) {
     moonOffset += baseOffset;
 
     vec2 moonPos = centeredUVs - (0.5 * uResolution / 100.0) - moonOffset;
-    moonPos = rotate2d(3.142 * -0.2) * moonPos;
+    moonPos = rotate2d(3.142 * -0.25) * moonPos;
 
     float moonSDF = sdfMoon(moonPos);
     color = mix(MOON_COLOR * MOON_COLOR_MULTIPLIER, color, smoothstep(0.0, 0.0075, moonSDF));
@@ -261,6 +279,46 @@ vec3 drawMoon(vec2 centeredUVs, vec3 col, float dayTime) {
     float pulse = remap(sin(uTime * 2.0), -1.0, 1.0, 0.3, 1.0);
     float moonGlow = sdfMoon(moonPos);
     color += mix(vec3(1.0), vec3(0.0), smoothstep(-0.1, 0.12, moonSDF)) * pulse * 0.25;
+    return color;
+}
+
+vec3 drawStars(vec2 centeredUVs, vec3 col, float dayTime) {
+    vec3 color = col;
+
+    for (float i = 0.0; i < NUM_STARS; i += 1.0) {
+        float hashSample = hash(vec2(i * 270.0 * uRandomFloat)) * 0.5 + 0.5;
+
+        float fade = 1.0;
+        if (dayTime < DAY_LENGTH * 0.55) {
+            fade = 1.0;
+        } else if (dayTime < DAY_LENGTH * 0.65) {
+            // Fade from 1 to 0 (stars appear)
+            fade = 1.0 - inverseLerp(dayTime, DAY_LENGTH * 0.55, DAY_LENGTH * 0.65);
+        } else if (dayTime < DAY_LENGTH * 0.85) {
+            float twinkle = 0.05 * (sin(uTime * 20.0) + 1.0);
+            fade = clamp(twinkle, 0.0, 0.1);
+        } else {
+            fade = saturate(inverseLerp(dayTime - hashSample * 0.25, DAY_LENGTH * 0.85, DAY_LENGTH * 0.95));
+        }
+        float starSize = mix(2.0, 1.0, hashSample);
+
+        vec2 starOffset = vec2(i * 1.2, 1.5) + 1.1 * hash(vec2(i + uRandomFloat));
+        vec2 starPosition = centeredUVs - (0.5 * uResolution / 100.0) - starOffset;
+
+        float starRotationAngle = mix(-3.142, 3.142, hashSample);
+
+        starPosition.x = mod(starPosition.x, uResolution.x / 100.0);
+        starPosition = starPosition - vec2(0.5, 0.75);
+        starPosition = rotate2d(starRotationAngle) * starPosition;
+        starPosition *= starSize;
+
+        float starSDF = sdfStar5(starPosition, 0.10, 2.0);
+
+        vec3 starColor = mix(STAR_COLOR, color, smoothstep(0.0, 0.0075, starSDF));
+        starColor += mix(0.2, 0.0, pow(smoothstep(-0.5, 0.5, starSDF), 0.5));
+
+        color = mix(starColor, color, fade);
+    }
     return color;
 }
 
@@ -273,6 +331,7 @@ void main() {
 
     vec3 color = drawBackground(dayTime);
 
+    color = drawStars(centeredUVs, color, dayTime);
     color = drawSun(centeredUVs, color, dayTime);
     color = drawMoon(centeredUVs, color, dayTime);
     color = drawClouds(centeredUVs, color, dayTime);
