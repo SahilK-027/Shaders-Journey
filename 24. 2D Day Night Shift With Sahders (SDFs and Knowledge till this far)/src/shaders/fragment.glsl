@@ -58,6 +58,9 @@ const vec3 MOON_COLOR_MULTIPLIER = vec3(1.0, 1.0, 0.98);
 const vec3 STAR_COLOR = vec3(0.984, 0.733, 0.078);
 const float NUM_STARS = 15.0;
 
+// Mountain colors
+const vec3 MOUNTAIN_COLOR = vec3(0.4627, 0.4314, 0.2980);
+
 //--------------------------------------
 // Helper Functions
 //--------------------------------------
@@ -107,6 +110,31 @@ float sdfStar5(in vec2 p, in float r, in float rf)
     vec2 ba = rf * vec2(-k1.y, k1.x) - vec2(0, 1);
     float h = clamp(dot(p, ba) / dot(ba, ba), 0.0, r);
     return length(p - ba * h) * sign(p.y * ba.x - p.x * ba.y);
+}
+
+float sdfTriangle(in vec2 p, in vec2 a, in vec2 b, in vec2 c) {
+    vec2 ba = b - a;
+    vec2 pa = p - a;
+    vec2 cb = c - b;
+    vec2 pb = p - b;
+    vec2 ac = a - c;
+    vec2 pc = p - c;
+
+    float d1 = length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0));
+    float d2 = length(pb - cb * clamp(dot(pb, cb) / dot(cb, cb), 0.0, 1.0));
+    float d3 = length(pc - ac * clamp(dot(pc, ac) / dot(ac, ac), 0.0, 1.0));
+    float d = min(min(d1, d2), d3);
+
+    // Barycentric coordinates to test if p is inside the triangle
+    vec3 bary;
+    bary.x = ((b.y - c.y) * (p.x - c.x) + (c.x - b.x) * (p.y - c.y)) /
+            ((b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y));
+    bary.y = ((c.y - a.y) * (p.x - c.x) + (a.x - c.x) * (p.y - c.y)) /
+            ((b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y));
+    bary.z = 1.0 - bary.x - bary.y;
+    if (bary.x > 0.0 && bary.y > 0.0 && bary.z > 0.0)
+        d = -d;
+    return d;
 }
 
 //--------------------------------------
@@ -322,6 +350,26 @@ vec3 drawStars(vec2 centeredUVs, vec3 col, float dayTime) {
     return color;
 }
 
+vec3 drawMountains(vec2 centeredUVs, vec3 col, float dayTime) {
+    vec3 color = col;
+    float baseLevel = -1.5;
+    float height = 4.0;
+    vec2 baseOffset = vec2(-5.0, 2.5);
+
+    vec3 cloudMultiplier = getDayCycleColor(MORNING_COLOR_MULTIPLIER, MIDDAY_COLOR_MULTIPLIER_CLOUD, EVENING_COLOR_MULTIPLIER_CLOUD, NIGHT_COLOR_MULTIPLIER_CLOUD, dayTime);
+
+    vec2 apex = vec2(0.0, baseLevel + height);
+    vec2 left = vec2(-2.7, baseLevel);
+    vec2 right = vec2(2.7, baseLevel);
+
+    vec2 mountainPos = centeredUVs - (0.5 * uResolution / 100.0);
+    float sdfTriangleSDF = sdfTriangle(mountainPos, apex, left, right);
+
+    color = mix(MOUNTAIN_COLOR * cloudMultiplier, color, smoothstep(0.0, 0.0075, sdfTriangleSDF));
+
+    return color;
+}
+
 //--------------------------------------
 // Main
 //--------------------------------------
@@ -333,8 +381,9 @@ void main() {
 
     color = drawStars(centeredUVs, color, dayTime);
     color = drawSun(centeredUVs, color, dayTime);
-    color = drawMoon(centeredUVs, color, dayTime);
+    color = drawMountains(centeredUVs, color, dayTime);
     color = drawClouds(centeredUVs, color, dayTime);
+    color = drawMoon(centeredUVs, color, dayTime);
     color = drawWater(centeredUVs, color, dayTime);
 
     gl_FragColor = vec4(color, 1.0);
