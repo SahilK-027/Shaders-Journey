@@ -4,10 +4,6 @@ uniform vec2 uResolution;
 varying vec2 vUv;
 
 #include "./helpers/utils.glsl";
-
-//--------------------------------------
-// Constants
-//--------------------------------------
 const float DAY_LENGTH = 10.0;
 
 // Background Colors
@@ -144,7 +140,6 @@ float sdfTriangle(in vec2 p, in vec2 a, in vec2 b, in vec2 c) {
     float d3 = length(pc - ac * clamp(dot(pc, ac) / dot(ac, ac), 0.0, 1.0));
     float d = min(min(d1, d2), d3);
 
-    // Barycentric coordinates to test if p is inside the triangle
     vec3 bary;
     bary.x = ((b.y - c.y) * (p.x - c.x) + (c.x - b.x) * (p.y - c.y)) /
             ((b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y));
@@ -170,7 +165,6 @@ vec3 drawBackground(float dayTime) {
     return getDayCycleColor(morning, midday, evening, night, dayTime);
 }
 
-// Draws clouds using SDFs and applies a day-cycle multiplier.
 vec3 drawClouds(vec2 centeredUVs, vec3 col, float dayTime) {
     vec3 color = col;
     vec3 cloudMultiplier = getDayCycleColor(MORNING_COLOR_MULTIPLIER, MIDDAY_COLOR_MULTIPLIER_CLOUD, EVENING_COLOR_MULTIPLIER_CLOUD, NIGHT_COLOR_MULTIPLIER_CLOUD, dayTime);
@@ -198,15 +192,12 @@ vec3 drawClouds(vec2 centeredUVs, vec3 col, float dayTime) {
     return color;
 }
 
-// Draws animated water waves and blends water colors with a day-cycle multiplier.
 vec3 drawWater(vec2 centeredUVs, vec3 col, float dayTime) {
     vec3 color = col;
     vec2 waveBase = centeredUVs;
 
-    // Perspective factor for depth: waves near the bottom use full amplitude.
     float perspectiveFactor = mix(1.0, 0.5, vUv.y);
 
-    // Random factors per layer
     float r1 = 0.7 + 0.7 * hash(vec2(1.0, 2.0));
     float r2 = 0.8 + 0.6 * hash(vec2(3.0, 4.0));
     float r3 = 0.9 + 0.4 * hash(vec2(5.0, 6.0));
@@ -219,7 +210,6 @@ vec3 drawWater(vec2 centeredUVs, vec3 col, float dayTime) {
     vec2 offset4 = vec2(sin(uTime * 0.7 + 2.0) * 0.3, cos(uTime * 0.5 + 2.0) * 0.175) * r4 * perspectiveFactor;
     vec2 offset5 = vec2(sin(uTime * 1.2 + 3.0) * 0.3, cos(uTime * 0.6 + 3.0) * 0.20) * r5 * perspectiveFactor;
 
-    // Adjusted radii for perspective
     float r0 = 0.19 * perspectiveFactor;
     float r1_adj = 0.12 * perspectiveFactor;
     float r2_adj = 0.178 * perspectiveFactor;
@@ -283,7 +273,6 @@ vec3 drawSun(vec2 centeredUVs, vec3 col, float dayTime) {
             sunOffset = vec2(0.0, mix(0.2, -4.0, t));
         }
 
-        // Optionally, add a horizontal baseline offset.
         vec2 baseOffset = vec2(-5.0, 2.5);
         sunOffset += baseOffset;
 
