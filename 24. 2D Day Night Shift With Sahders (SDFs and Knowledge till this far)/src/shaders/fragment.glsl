@@ -65,7 +65,7 @@ const vec3 EVENING_COLOR_MULTIPLIER_MOUNTAIN = vec3(1.0, 0.68, 0.68);
 const vec3 NIGHT_COLOR_MULTIPLIER_MOUNTAIN = vec3(0.32, 0.35, 0.38);
 const vec3 MOUNTAIN1_COLOR = vec3(0.5, 0.4, 0.3);
 const vec3 MOUNTAIN2_COLOR = vec3(0.6, 0.5, 0.4);
-const vec3 MOUNTAIN3_COLOR = vec3(0.6, 0.45, 0.2);
+const vec3 MOUNTAIN3_COLOR = vec3(0.36, 0.3, 0.18);
 const vec3 MOUNTAIN_COLORS[3] = vec3[3](MOUNTAIN1_COLOR, MOUNTAIN2_COLOR, MOUNTAIN3_COLOR);
 const float MOUNTAIN_BASE_LEVEL = -1.5;
 const vec2 MOUNTAIN_OFFSETS[3] = vec2[3](
@@ -284,7 +284,7 @@ vec3 drawSun(vec2 centeredUVs, vec3 col, float dayTime) {
         }
 
         // Optionally, add a horizontal baseline offset.
-        vec2 baseOffset = vec2(-5.0, 2.5);
+        vec2 baseOffset = vec2(-5.0, 4.0);
         sunOffset += baseOffset;
 
         vec2 sunPos = centeredUVs - (0.5 * uResolution / 100.0) - sunOffset;
@@ -374,7 +374,7 @@ vec3 drawMountains(vec2 centeredUVs, vec3 col, float dayTime) {
     float baseLevel = -1.5;
 
     for (int i = 0; i < 3; i++) {
-        float height = 2.5 + MOUNTAIN_HEIGHTS[i];
+        float height = 2.2 + MOUNTAIN_HEIGHTS[i];
         vec2 baseOffset = MOUNTAIN_OFFSETS[i] * (uResolution / 100.0);
 
         vec3 cloudMultiplier = getDayCycleColor(
@@ -392,6 +392,10 @@ vec3 drawMountains(vec2 centeredUVs, vec3 col, float dayTime) {
         vec2 mountainPos = centeredUVs - (0.5 * uResolution / 100.0) - baseOffset;
         float sdfTriangleSDF = sdfTriangle(mountainPos, apex, left, right);
 
+        float mountainShadow = sdfTriangle(mountainPos - 0.05, apex, left, right) * 12.0;
+        float shadowIntensity = 0.075;
+
+        color = mix(mix(color, vec3(0.0), shadowIntensity), color, smoothstep(0.0, 10.0, mountainShadow));
         color = mix(MOUNTAIN_COLORS[i] * cloudMultiplier, color, smoothstep(0.0, 0.0075, sdfTriangleSDF));
     }
 

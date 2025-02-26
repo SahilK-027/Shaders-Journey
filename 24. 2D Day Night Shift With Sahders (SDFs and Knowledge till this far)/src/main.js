@@ -8,8 +8,8 @@ import "./style.css";
 class ShaderRenderer {
   constructor() {
     // Debug
-    this.gui = new GUI();
-    this.gui.close();
+    // this.gui = new GUI();
+    // this.gui.close();
 
     // Canvas
     this.canvas = document.querySelector("canvas.webgl");
