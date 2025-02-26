@@ -8,7 +8,7 @@ varying vec2 vUv;
 //--------------------------------------
 // Constants
 //--------------------------------------
-const float DAY_LENGTH = 60.0;
+const float DAY_LENGTH = 10.0;
 
 // Background Colors
 const vec3 MORNING_COLOR1 = vec3(1.0, 0.89, 0.79);
@@ -59,7 +59,26 @@ const vec3 STAR_COLOR = vec3(0.984, 0.733, 0.078);
 const float NUM_STARS = 15.0;
 
 // Mountain colors
-const vec3 MOUNTAIN_COLOR = vec3(0.4627, 0.4314, 0.2980);
+const vec3 MORNING_COLOR_MULTIPLIER_MOUNTAIN = vec3(1.0, 0.94, 0.85);
+const vec3 MIDDAY_COLOR_MULTIPLIER_MOUNTAIN = vec3(1.0, 0.78, 0.11);
+const vec3 EVENING_COLOR_MULTIPLIER_MOUNTAIN = vec3(1.0, 0.68, 0.68);
+const vec3 NIGHT_COLOR_MULTIPLIER_MOUNTAIN = vec3(0.32, 0.35, 0.38);
+const vec3 MOUNTAIN1_COLOR = vec3(0.5, 0.4, 0.3);
+const vec3 MOUNTAIN2_COLOR = vec3(0.6, 0.5, 0.4);
+const vec3 MOUNTAIN3_COLOR = vec3(0.6, 0.45, 0.2);
+const vec3 MOUNTAIN_COLORS[3] = vec3[3](MOUNTAIN1_COLOR, MOUNTAIN2_COLOR, MOUNTAIN3_COLOR);
+const float MOUNTAIN_BASE_LEVEL = -1.5;
+const vec2 MOUNTAIN_OFFSETS[3] = vec2[3](
+        vec2(-0.15, 0.0),
+        vec2(0.15, 0.0),
+        vec2(0.0, 0.0)
+    );
+const float MOUNTAIN_HEIGHTS[3] = float[3](1.0, 0.3, 1.9);
+const vec2 MOUNTAIN_LR[3] = vec2[3](
+        vec2(-1.5, 1.5),
+        vec2(-2.0, 2.0),
+        vec2(-2.0, 2.0)
+    );
 
 //--------------------------------------
 // Helper Functions
@@ -92,7 +111,7 @@ float sdfCloud(vec2 pixelCords) {
 float sdfMoon(vec2 pixelCords) {
     float d = opSubtraction(
             sdfCircle(pixelCords + vec2(0.55, 0.0), 0.8),
-            sdfCircle(pixelCords, 0.8)
+            sdfCircle(pixelCords, 0.7)
         );
 
     return d;
@@ -314,7 +333,7 @@ vec3 drawStars(vec2 centeredUVs, vec3 col, float dayTime) {
     vec3 color = col;
 
     for (float i = 0.0; i < NUM_STARS; i += 1.0) {
-        float hashSample = hash(vec2(i * 270.0 * uRandomFloat)) * 0.5 + 0.5;
+        float hashSample = hash(vec2(i * 270.0 * uRandomFloat)) * 0.5 + 0.2;
 
         float fade = 1.0;
         if (dayTime < DAY_LENGTH * 0.55) {
@@ -353,19 +372,28 @@ vec3 drawStars(vec2 centeredUVs, vec3 col, float dayTime) {
 vec3 drawMountains(vec2 centeredUVs, vec3 col, float dayTime) {
     vec3 color = col;
     float baseLevel = -1.5;
-    float height = 4.0;
-    vec2 baseOffset = vec2(-5.0, 2.5);
 
-    vec3 cloudMultiplier = getDayCycleColor(MORNING_COLOR_MULTIPLIER, MIDDAY_COLOR_MULTIPLIER_CLOUD, EVENING_COLOR_MULTIPLIER_CLOUD, NIGHT_COLOR_MULTIPLIER_CLOUD, dayTime);
+    for (int i = 0; i < 3; i++) {
+        float height = 2.5 + MOUNTAIN_HEIGHTS[i];
+        vec2 baseOffset = MOUNTAIN_OFFSETS[i] * (uResolution / 100.0);
 
-    vec2 apex = vec2(0.0, baseLevel + height);
-    vec2 left = vec2(-2.7, baseLevel);
-    vec2 right = vec2(2.7, baseLevel);
+        vec3 cloudMultiplier = getDayCycleColor(
+                MORNING_COLOR_MULTIPLIER_MOUNTAIN,
+                MIDDAY_COLOR_MULTIPLIER_MOUNTAIN,
+                EVENING_COLOR_MULTIPLIER_MOUNTAIN,
+                NIGHT_COLOR_MULTIPLIER_MOUNTAIN,
+                dayTime
+            );
 
-    vec2 mountainPos = centeredUVs - (0.5 * uResolution / 100.0);
-    float sdfTriangleSDF = sdfTriangle(mountainPos, apex, left, right);
+        vec2 apex = vec2(0.0, baseLevel + height);
+        vec2 left = vec2(-1.0 + MOUNTAIN_LR[i].x, baseLevel);
+        vec2 right = vec2(1.0 + MOUNTAIN_LR[i].y, baseLevel);
 
-    color = mix(MOUNTAIN_COLOR * cloudMultiplier, color, smoothstep(0.0, 0.0075, sdfTriangleSDF));
+        vec2 mountainPos = centeredUVs - (0.5 * uResolution / 100.0) - baseOffset;
+        float sdfTriangleSDF = sdfTriangle(mountainPos, apex, left, right);
+
+        color = mix(MOUNTAIN_COLORS[i] * cloudMultiplier, color, smoothstep(0.0, 0.0075, sdfTriangleSDF));
+    }
 
     return color;
 }
@@ -381,9 +409,9 @@ void main() {
 
     color = drawStars(centeredUVs, color, dayTime);
     color = drawSun(centeredUVs, color, dayTime);
+    color = drawMoon(centeredUVs, color, dayTime);
     color = drawMountains(centeredUVs, color, dayTime);
     color = drawClouds(centeredUVs, color, dayTime);
-    color = drawMoon(centeredUVs, color, dayTime);
     color = drawWater(centeredUVs, color, dayTime);
 
     gl_FragColor = vec4(color, 1.0);
