@@ -284,7 +284,7 @@ vec3 drawSun(vec2 centeredUVs, vec3 col, float dayTime) {
         }
 
         // Optionally, add a horizontal baseline offset.
-        vec2 baseOffset = vec2(-5.0, 4.0);
+        vec2 baseOffset = vec2(-5.0, 2.5);
         sunOffset += baseOffset;
 
         vec2 sunPos = centeredUVs - (0.5 * uResolution / 100.0) - sunOffset;
