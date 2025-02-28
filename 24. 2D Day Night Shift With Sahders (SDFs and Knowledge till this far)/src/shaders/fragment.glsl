@@ -4,7 +4,7 @@ uniform vec2 uResolution;
 varying vec2 vUv;
 
 #include "./helpers/utils.glsl";
-const float DAY_LENGTH = 10.0;
+const float DAY_LENGTH = 60.0;
 
 // Background Colors
 const vec3 MORNING_COLOR1 = vec3(1.0, 0.89, 0.79);
@@ -165,11 +165,11 @@ vec3 drawBackground(float dayTime) {
     return getDayCycleColor(morning, midday, evening, night, dayTime);
 }
 
-vec3 drawClouds(vec2 centeredUVs, vec3 col, float dayTime) {
+vec3 drawClouds(vec2 centeredUVs, vec3 col, float dayTime, float start, float end) {
     vec3 color = col;
     vec3 cloudMultiplier = getDayCycleColor(MORNING_COLOR_MULTIPLIER, MIDDAY_COLOR_MULTIPLIER_CLOUD, EVENING_COLOR_MULTIPLIER_CLOUD, NIGHT_COLOR_MULTIPLIER_CLOUD, dayTime);
 
-    for (float i = 0.0; i < NUM_CLOUDS; i += 1.0) {
+    for (float i = start; i < end; i += 1.0) {
         float cloudSize = mix(2.0, 1.0, (i / NUM_CLOUDS) + 0.1 * hash(vec2(i))) * 1.6;
         float cloudSpeedHash = remap(hash(vec2(i * cloudSize + uRandomFloat)), -1.0, 1.0, 0.8, 1.0);
         float cloudSpeed = cloudSize * cloudSpeedHash * 0.12;
@@ -403,8 +403,9 @@ void main() {
     color = drawStars(centeredUVs, color, dayTime);
     color = drawSun(centeredUVs, color, dayTime);
     color = drawMoon(centeredUVs, color, dayTime);
+    color = drawClouds(centeredUVs, color, dayTime, 0.0, 7.0);
     color = drawMountains(centeredUVs, color, dayTime);
-    color = drawClouds(centeredUVs, color, dayTime);
+    color = drawClouds(centeredUVs, color, dayTime, 8.0, NUM_CLOUDS);
     color = drawWater(centeredUVs, color, dayTime);
 
     gl_FragColor = vec4(color, 1.0);
