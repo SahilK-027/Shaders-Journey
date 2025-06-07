@@ -38,11 +38,9 @@ class ShaderRenderer {
     const loader = new THREE.TextureLoader();
 
     // Load data texture
-    this.texture = loader.load(dataTexture);
-    this.texture.wrapS = THREE.RepeatWrapping;
-    this.texture.wrapT = THREE.RepeatWrapping;
-    this.texture.magFilter = THREE.NearestFilter;
-    this.texture.minFilter = THREE.NearestFilter;
+    this.dataTexture = loader.load(dataTexture);
+    // Why NoColorSpace? => Because it is data texture not gonna output any color directly
+    this.dataTexture.colorSpace = THREE.NoColorSpace;
 
     // Load terrain textures
     this.waterTexture = loader.load(waterTexture);
@@ -54,8 +52,7 @@ class ShaderRenderer {
       (texture) => {
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
-        texture.magFilter = THREE.LinearFilter;
-        texture.minFilter = THREE.LinearMipMapLinearFilter;
+        texture.colorSpace = THREE.LinearSRGBColorSpace;
       }
     );
 
@@ -69,7 +66,7 @@ class ShaderRenderer {
       fragmentShader,
       side: THREE.DoubleSide,
       uniforms: {
-        uTexture: { value: this.texture },
+        uTexture: { value: this.dataTexture },
         uWaterTexture: { value: this.waterTexture },
         uGrassTexture: { value: this.grassTexture },
         uLandTexture: { value: this.landTexture },
